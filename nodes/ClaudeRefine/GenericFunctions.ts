@@ -4,11 +4,12 @@ import type {
 	IHttpRequestMethods,
 	IHttpRequestOptions,
 	ILoadOptionsFunctions,
+	ISupplyDataFunctions,
 	JsonObject,
 } from 'n8n-workflow';
 import { deepCopy, jsonParse, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
-export type ClaudeRefineContext = IExecuteFunctions | ILoadOptionsFunctions;
+export type ClaudeRefineContext = IExecuteFunctions | ILoadOptionsFunctions | ISupplyDataFunctions;
 
 /**
  * Current (and only recommended) API version. New Anthropic features ship as
@@ -32,10 +33,14 @@ export interface ClaudeRequestExtras {
 	/** `anthropic-beta` feature flags to send with the request. */
 	betas?: string[];
 	headers?: Record<string, string>;
-	/** Response encoding — 'text' for batch results (JSONL), 'arraybuffer' for file downloads. */
-	encoding?: 'arraybuffer' | 'text';
+	/**
+	 * Response encoding — 'text' for batch results (JSONL), 'arraybuffer' for
+	 * file downloads, 'stream' for server-sent events.
+	 */
+	encoding?: 'arraybuffer' | 'text' | 'stream';
 	returnFullResponse?: boolean;
 	timeout?: number;
+	abortSignal?: AbortSignal;
 }
 
 /** Base URL from the credential, normalized (scheme added, trailing slashes removed). */
@@ -154,6 +159,9 @@ export async function claudeApiRequest(
 	if (extras.timeout !== undefined) {
 		options.timeout = extras.timeout;
 	}
+	if (extras.abortSignal !== undefined) {
+		options.abortSignal = extras.abortSignal;
+	}
 
 	try {
 		const response = await this.helpers.httpRequestWithAuthentication.call(
@@ -240,7 +248,7 @@ export function cacheControlFor(ttl: CacheTtl | undefined): IDataObject | undefi
  * into a NodeOperationError pointing at the parameter.
  */
 export function parseJsonParameter<T>(
-	this: IExecuteFunctions,
+	this: ClaudeRefineContext,
 	value: unknown,
 	parameterDisplayName: string,
 	itemIndex: number,

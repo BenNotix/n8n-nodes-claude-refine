@@ -1,0 +1,20 @@
+{
+	"node": "n8n-nodes-claude-refine.claudeRefineChatModel",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["AI"],
+	"subcategories": {
+		"AI": ["Language Models", "Root Nodes"],
+		"Language Models": ["Chat Models (Recommended)"]
+	},
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/BenNotix/n8n-nodes-claude-refine?tab=readme-ov-file#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{ "url": "https://github.com/BenNotix/n8n-nodes-claude-refine?tab=readme-ov-file" }
+		]
+	}
+}

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-20
+
+### Added
+
+- **Claude Refine Chat Model** sub-node: connect Claude to AI Agents, LLM Chains and any Chat Model input, with block-level prompt caching (system prompt, tool definitions, conversation — re-applied on every step of the agent loop), extended thinking (adaptive / disabled / legacy budgets, display control), effort levels, sampling options, custom beta headers, request body overrides, timeouts and streaming support. Built on the official `@n8n/ai-node-sdk` (requires n8n ≥ 2.16); still **zero runtime dependencies**.
+- Cache usage (`cache_read_input_tokens`, `cache_creation_input_tokens`) is reported in the model's usage metadata, visible in the n8n log panel.
+
 ## [1.0.1] - 2026-08-20
 
 ### Fixed

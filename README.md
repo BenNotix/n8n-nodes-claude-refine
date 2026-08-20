@@ -4,15 +4,16 @@
 [![npm downloads](https://img.shields.io/npm/dm/n8n-nodes-claude-refine.svg)](https://www.npmjs.com/package/n8n-nodes-claude-refine)
 [![license](https://img.shields.io/npm/l/n8n-nodes-claude-refine.svg)](LICENSE.md)
 
-This is an n8n community node package for the **[Anthropic Claude API](https://platform.claude.com/docs/en/home)** — the REST API behind the Claude models. It covers the parts of the API the built-in n8n Anthropic nodes don't: **prompt caching** with explicit breakpoints, **message batches** at 50% cost, **token counting**, **extended thinking and effort control**, **structured outputs**, **citations**, **server tools** (web search, web fetch, code execution) and the **Files** and **Models** APIs — all from one node, with an escape hatch to call any other endpoint.
+This is an n8n community node package for the **[Anthropic Claude API](https://platform.claude.com/docs/en/home)** — the REST API behind the Claude models. It covers the parts of the API the built-in n8n Anthropic nodes don't: **prompt caching** with explicit breakpoints, **message batches** at 50% cost, **token counting**, **extended thinking and effort control**, **structured outputs**, **citations**, **server tools** (web search, web fetch, code execution) and the **Files** and **Models** APIs — with an escape hatch to call any other endpoint.
 
-It ships one node:
+It ships two nodes:
 
 - **Claude Refine** — Message, Batch, File, Model and Custom API Call resources on your Anthropic account.
+- **Claude Refine Chat Model** — a Chat Model sub-node for **AI Agents and chains**, with block-level prompt caching re-applied on every step of the agent loop, extended thinking and effort control.
 
-> 💾 **Why "refine"?** The node is built around the features that make Claude cheap and precise in production automations: cached prefixes cost ~10% to read and don't count toward input-token rate limits, and batches halve the price of bulk work.
+> 💾 **Why "refine"?** The nodes are built around the features that make Claude cheap and precise in production automations: cached prefixes cost ~10% to read and don't count toward input-token rate limits, and batches halve the price of bulk work.
 
-[Installation](#installation) · [Credentials](#credentials) · [Resources & operations](#resources--operations) · [Prompt caching](#prompt-caching) · [Usage examples](#usage-examples) · [Model parameter rules](#model-parameter-rules) · [Known limitations](#known-limitations)
+[Installation](#installation) · [Credentials](#credentials) · [Resources & operations](#resources--operations) · [Chat Model for AI Agents](#chat-model-for-ai-agents) · [Prompt caching](#prompt-caching) · [Usage examples](#usage-examples) · [Model parameter rules](#model-parameter-rules) · [Known limitations](#known-limitations)
 
 ## Installation
 
@@ -22,7 +23,7 @@ Self-hosted n8n: **Settings → Community Nodes → Install** and enter `n8n-nod
 
 Requirements:
 
-- n8n ≥ 1.86.0 (the node uses the modern connection types and can be used as an AI Agent tool)
+- n8n ≥ 1.86.0 for the Claude Refine node; **n8n ≥ 2.16** for the Claude Refine Chat Model sub-node (it uses n8n's `@n8n/ai-node-sdk`, bundled with n8n since 2.16)
 - An Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
 
 ## Credentials
@@ -97,6 +98,17 @@ The default **Simplify Output** returns `{ id, model, text, stopReason, stopDeta
 ### Custom API Call
 
 Call any other Anthropic endpoint (skills, usage/admin endpoints…) with the node credential: method, path, query, JSON body, custom `anthropic-beta` headers, optional full response.
+
+## Chat Model for AI Agents
+
+The **Claude Refine Chat Model** sub-node plugs into the *Chat Model* input of the AI Agent, LLM Chain and related nodes — like the built-in Anthropic Chat Model, but with the features this package exists for:
+
+- **Block-level prompt caching**, re-applied on **every call of the agent loop**: breakpoints on the agent's system prompt, on the tool definitions it binds, and on the last message of each step — so step N re-reads steps 1…N−1 from cache at ~10% cost. On tool-heavy agents this is routinely a 60–90% input-cost cut.
+- **Extended thinking** (adaptive / disabled / legacy budgets, display control) and **effort** (low → max).
+- Custom **anthropic-beta headers** and a **request body overrides** JSON applied to every call.
+- Cache activity is visible in the n8n log panel (`cache_read_input_tokens` in the usage metadata of each call).
+
+Built on n8n's official **`@n8n/ai-node-sdk`** (no LangChain dependency, no runtime dependencies at all) — it requires **n8n ≥ 2.16**. Tool calling, vision content and citations flow through; thinking blocks are replayed with their signatures inside a tool-use turn.
 
 ## Prompt caching
 
