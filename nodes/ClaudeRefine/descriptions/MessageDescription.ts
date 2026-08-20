@@ -400,7 +400,7 @@ export const messageFields: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description:
-					'Whether to let Claude run Python and bash in a sandboxed container on Anthropic servers. Generated files can be downloaded through the File resource.',
+					'Whether to let Claude run Python and bash in a sandboxed container on Anthropic servers (Claude 4.5+ models). Generated files can be downloaded through the File resource.',
 			},
 			{
 				displayName: 'Custom Tools (JSON)',
@@ -447,7 +447,7 @@ export const messageFields: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description:
-					'Whether to let Claude fetch the full content of URLs already present in the conversation',
+					'Whether to let Claude fetch the full content of URLs already present in the conversation (Claude 4.6+ models)',
 			},
 			{
 				displayName: 'Web Fetch Max Uses',
@@ -463,7 +463,7 @@ export const messageFields: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description:
-					'Whether to let Claude search the web on Anthropic servers, with automatic citations',
+					'Whether to let Claude search the web on Anthropic servers, with automatic citations (Claude 4.6+ models)',
 			},
 			{
 				displayName: 'Web Search Allowed Domains',
@@ -516,7 +516,7 @@ export const messageFields: INodeProperties[] = [
 				],
 				default: 'default',
 				description:
-					'How many tokens Claude may spend thinking and answering. Xhigh and Max need Opus 4.7+ / Sonnet 5 / Fable 5; Haiku 4.5 does not support effort at all.',
+					'How many tokens Claude may spend thinking and answering. Xhigh needs Opus 4.7+ / Sonnet 5 / Fable 5; Max works on Opus 4.6+ and Sonnet 4.6+; Haiku 4.5 does not support effort at all.',
 			},
 			{
 				displayName: 'Structured Output Schema (JSON)',

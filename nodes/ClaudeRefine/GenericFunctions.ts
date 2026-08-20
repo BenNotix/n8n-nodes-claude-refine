@@ -6,7 +6,7 @@ import type {
 	ILoadOptionsFunctions,
 	JsonObject,
 } from 'n8n-workflow';
-import { jsonParse, NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { deepCopy, jsonParse, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 export type ClaudeRefineContext = IExecuteFunctions | ILoadOptionsFunctions;
 
@@ -133,7 +133,9 @@ export async function claudeApiRequest(
 
 	const options: IHttpRequestOptions = {
 		method,
-		url: `${baseUrl}${endpoint}`,
+		// Endpoints are paths anchored on the credential base URL; absolute URLs
+		// returned by the API (e.g. a batch results_url) pass through unchanged
+		url: /^https?:\/\//i.test(endpoint) ? endpoint : `${baseUrl}${endpoint}`,
 		headers,
 		json: extras.encoding === undefined && !Buffer.isBuffer(extras.body),
 	};
@@ -337,7 +339,7 @@ export async function buildAttachmentBlocks(
 				}
 				break;
 			}
-			case 'base64':
+			case 'base64': {
 				if (!attachment.base64Data || !attachment.mediaType) {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -345,12 +347,19 @@ export async function buildAttachmentBlocks(
 						{ itemIndex },
 					);
 				}
-				source = {
-					type: 'base64',
-					media_type: attachment.mediaType,
-					data: attachment.base64Data.replace(/\s+/g, ''),
-				};
+				const data = attachment.base64Data.replace(/\s+/g, '');
+				if (attachment.type === 'document' && attachment.mediaType.startsWith('text/')) {
+					// Plain-text documents use the text source, not base64
+					source = {
+						type: 'text',
+						media_type: 'text/plain',
+						data: Buffer.from(data, 'base64').toString('utf8'),
+					};
+				} else {
+					source = { type: 'base64', media_type: attachment.mediaType, data };
+				}
 				break;
+			}
 			case 'fileId':
 				if (!attachment.fileId) {
 					throw new NodeOperationError(this.getNode(), 'Attachment is missing its File ID', {
@@ -417,6 +426,44 @@ function domainList(value: string | undefined): string[] | undefined {
 	return domains.length > 0 ? domains : undefined;
 }
 
+/** Whether any content block references an uploaded file (needs the Files API beta). */
+function messagesReferenceFiles(messages: IDataObject[]): boolean {
+	for (const message of messages) {
+		if (!Array.isArray(message.content)) {
+			continue;
+		}
+		for (const block of message.content as IDataObject[]) {
+			if (block.type === 'container_upload') {
+				return true;
+			}
+			if ((block.source as IDataObject | undefined)?.type === 'file') {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/** Number of cache_control breakpoints across tools, system blocks and messages. */
+function countCacheBreakpoints(
+	tools: IDataObject[],
+	system: unknown,
+	messages: IDataObject[],
+): number {
+	let count = tools.filter((tool) => tool.cache_control !== undefined).length;
+	if (Array.isArray(system)) {
+		count += (system as IDataObject[]).filter((block) => block.cache_control !== undefined).length;
+	}
+	for (const message of messages) {
+		if (Array.isArray(message.content)) {
+			count += (message.content as IDataObject[]).filter(
+				(block) => block.cache_control !== undefined,
+			).length;
+		}
+	}
+	return count;
+}
+
 /**
  * Build the /v1/messages request body (also used by count_tokens and by the
  * Batch resource) from the node parameters of one item.
@@ -437,9 +484,10 @@ export async function buildMessageRequestBody(
 	// ---------- messages ----------
 	const inputType = this.getNodeParameter('inputType', itemIndex) as string;
 	let messages: IDataObject[];
+	let simplePrompt = '';
 	if (inputType === 'prompt') {
-		const prompt = this.getNodeParameter('prompt', itemIndex) as string;
-		messages = [{ role: 'user', content: prompt }];
+		simplePrompt = this.getNodeParameter('prompt', itemIndex) as string;
+		messages = [{ role: 'user', content: simplePrompt }];
 	} else if (inputType === 'messages') {
 		const entries = this.getNodeParameter(
 			'messages.message',
@@ -473,7 +521,9 @@ export async function buildMessageRequestBody(
 				{ itemIndex },
 			);
 		}
-		messages = parsed as IDataObject[];
+		// An expression can resolve to the upstream item's live data — copy it so
+		// the cache breakpoint / attachment merging below never mutates input items
+		messages = deepCopy(parsed) as IDataObject[];
 	}
 
 	// ---------- attachments (appended to the last user message) ----------
@@ -498,8 +548,28 @@ export async function buildMessageRequestBody(
 			);
 		}
 		const target = messages[lastUserIndex];
-		// Attachments go before the text so the question follows the material
-		target.content = [...attachmentBlocks, ...contentToBlocks(target.content)];
+		const existing = contentToBlocks(target.content);
+		// tool_result blocks must stay first in a user message; attachments go
+		// after them but before the text, so the question follows the material
+		let insertAt = 0;
+		while (insertAt < existing.length && existing[insertAt].type === 'tool_result') {
+			insertAt++;
+		}
+		target.content = [
+			...existing.slice(0, insertAt),
+			...attachmentBlocks,
+			...existing.slice(insertAt),
+		];
+	}
+	if (inputType === 'prompt' && simplePrompt.trim() === '' && attachmentBlocks.length === 0) {
+		throw new NodeOperationError(
+			this.getNode(),
+			'The Prompt field is empty — provide a prompt or add an attachment',
+			{ itemIndex },
+		);
+	}
+	if (!betas.includes(FILES_API_BETA) && messagesReferenceFiles(messages)) {
+		betas.push(FILES_API_BETA);
 	}
 	body.messages = messages;
 
@@ -580,6 +650,15 @@ export async function buildMessageRequestBody(
 			tools[tools.length - 1] = { ...tools[tools.length - 1], cache_control: toolsCache };
 		}
 		body.tools = tools;
+	}
+
+	const breakpointCount = countCacheBreakpoints(tools, body.system, messages);
+	if (breakpointCount > 4) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`The request has ${breakpointCount} cache breakpoints but the API allows at most 4 — remove some "Cache Up to Here" markers or fixed Prompt Caching breakpoints`,
+			{ itemIndex },
+		);
 	}
 	if (
 		!forCountTokens &&

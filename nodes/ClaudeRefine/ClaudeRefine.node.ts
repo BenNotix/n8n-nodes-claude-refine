@@ -269,6 +269,21 @@ export class ClaudeRefine implements INodeType {
 					if (overrides !== undefined) {
 						Object.assign(params, overrides);
 					}
+					// A single empty user message means the Prompt was forgotten (and
+					// no messages override replaced it) — fail before submitting the batch
+					const finalMessages = params.messages as IDataObject[];
+					if (
+						Array.isArray(finalMessages) &&
+						finalMessages.length === 1 &&
+						typeof finalMessages[0].content === 'string' &&
+						finalMessages[0].content.trim() === ''
+					) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'The Prompt is empty for this item — set Prompt or provide messages through Params Overrides (JSON)',
+							{ itemIndex: i },
+						);
+					}
 					requests.push({ custom_id: customId, params });
 				}
 
@@ -281,7 +296,10 @@ export class ClaudeRefine implements INodeType {
 				});
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: 0 } });
+					returnData.push({
+						json: { error: (error as Error).message },
+						pairedItem: items.map((_item, index) => ({ item: index })),
+					});
 					return [returnData];
 				}
 				if (error instanceof NodeApiError || error instanceof NodeOperationError) {
@@ -366,7 +384,7 @@ export class ClaudeRefine implements INodeType {
 						responseData = await claudeApiRequest.call(
 							this,
 							'GET',
-							`/v1/messages/batches/${batchId}`,
+							`/v1/messages/batches/${encodeURIComponent(batchId)}`,
 						);
 					} else if (operation === 'getMany') {
 						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
@@ -378,7 +396,7 @@ export class ClaudeRefine implements INodeType {
 						const batch = await claudeApiRequest.call(
 							this,
 							'GET',
-							`/v1/messages/batches/${batchId}`,
+							`/v1/messages/batches/${encodeURIComponent(batchId)}`,
 						);
 						if (batch.processing_status !== 'ended') {
 							throw new NodeOperationError(
@@ -395,9 +413,15 @@ export class ClaudeRefine implements INodeType {
 								{ itemIndex: i },
 							);
 						}
-						const raw = (await claudeApiRequest.call(this, 'GET', resultsUrl, {
-							encoding: 'text',
-						})) as unknown as string;
+						// results_url is absolute and always points at api.anthropic.com —
+						// re-anchor the known results path on the credential base URL so
+						// custom gateways keep working
+						const raw = (await claudeApiRequest.call(
+							this,
+							'GET',
+							`/v1/messages/batches/${encodeURIComponent(batchId)}/results`,
+							{ encoding: 'text' },
+						)) as unknown as string;
 						const simplify = this.getNodeParameter('simplifyResults', i) as boolean;
 						const lines = String(raw)
 							.split('\n')
@@ -412,14 +436,14 @@ export class ClaudeRefine implements INodeType {
 						responseData = await claudeApiRequest.call(
 							this,
 							'POST',
-							`/v1/messages/batches/${batchId}/cancel`,
+							`/v1/messages/batches/${encodeURIComponent(batchId)}/cancel`,
 						);
 					} else {
 						const batchId = this.getNodeParameter('batchId', i) as string;
 						responseData = await claudeApiRequest.call(
 							this,
 							'DELETE',
-							`/v1/messages/batches/${batchId}`,
+							`/v1/messages/batches/${encodeURIComponent(batchId)}`,
 						);
 					}
 				} else if (resource === 'file') {
@@ -461,9 +485,14 @@ export class ClaudeRefine implements INodeType {
 						});
 					} else if (operation === 'get') {
 						const fileId = this.getNodeParameter('fileId', i) as string;
-						responseData = await claudeApiRequest.call(this, 'GET', `/v1/files/${fileId}`, {
-							betas: [FILES_API_BETA],
-						});
+						responseData = await claudeApiRequest.call(
+							this,
+							'GET',
+							`/v1/files/${encodeURIComponent(fileId)}`,
+							{
+								betas: [FILES_API_BETA],
+							},
+						);
 					} else if (operation === 'getMany') {
 						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 						responseData = await claudeApiRequestAllItems.call(this, '/v1/files', {
@@ -473,13 +502,18 @@ export class ClaudeRefine implements INodeType {
 					} else if (operation === 'download') {
 						const fileId = this.getNodeParameter('fileId', i) as string;
 						const propertyName = this.getNodeParameter('downloadBinaryProperty', i) as string;
-						const metadata = await claudeApiRequest.call(this, 'GET', `/v1/files/${fileId}`, {
-							betas: [FILES_API_BETA],
-						});
+						const metadata = await claudeApiRequest.call(
+							this,
+							'GET',
+							`/v1/files/${encodeURIComponent(fileId)}`,
+							{
+								betas: [FILES_API_BETA],
+							},
+						);
 						const content = (await claudeApiRequest.call(
 							this,
 							'GET',
-							`/v1/files/${fileId}/content`,
+							`/v1/files/${encodeURIComponent(fileId)}/content`,
 							{ betas: [FILES_API_BETA], encoding: 'arraybuffer' },
 						)) as unknown as Buffer;
 						const binaryData = await this.helpers.prepareBinaryData(
@@ -495,9 +529,14 @@ export class ClaudeRefine implements INodeType {
 						continue;
 					} else {
 						const fileId = this.getNodeParameter('fileId', i) as string;
-						responseData = await claudeApiRequest.call(this, 'DELETE', `/v1/files/${fileId}`, {
-							betas: [FILES_API_BETA],
-						});
+						responseData = await claudeApiRequest.call(
+							this,
+							'DELETE',
+							`/v1/files/${encodeURIComponent(fileId)}`,
+							{
+								betas: [FILES_API_BETA],
+							},
+						);
 					}
 				} else if (resource === 'model') {
 					// ----------------------------------------

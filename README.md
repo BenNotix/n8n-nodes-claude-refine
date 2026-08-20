@@ -132,7 +132,8 @@ The API rejects certain parameter/model combinations with a 400. Cheat sheet (al
 | `thinking: budget` (legacy)| Claude 4.6 and older only; min 1024, must be < Max Tokens                                                    |
 | `thinking: disabled`       | Rejected by Fable 5; rejected by Opus 5 at effort Xhigh/Max                                                  |
 | Temperature / Top P / Top K| Removed on Opus 5 / Opus 4.8 / Opus 4.7 / Sonnet 5 / Fable 5; on Claude 4 models don't combine temp + Top P |
-| Effort Xhigh / Max         | Opus 4.7+ / Sonnet 5 / Fable 5; Haiku 4.5 has no effort support                                              |
+| Effort Xhigh               | Opus 4.7+ / Sonnet 5 / Fable 5 (Max works on Opus 4.6+ and Sonnet 4.6+); Haiku 4.5 has no effort support     |
+| Web Search / Web Fetch     | Claude 4.6+ models; Code Execution needs Claude 4.5+                                                         |
 | Citations                  | Not compatible with structured outputs                                                                       |
 
 Use **Model → Get** to inspect a model's `capabilities` tree at runtime when in doubt.

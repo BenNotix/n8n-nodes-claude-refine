@@ -57,8 +57,10 @@ export class ClaudeRefineApi implements ICredentialType {
 
 	test: ICredentialTestRequest = {
 		request: {
+			// Mirrors the runtime normalization: default host, scheme added when
+			// missing, trailing slashes removed
 			baseURL:
-				'={{ $credentials.baseUrl ? $credentials.baseUrl.trim().replace(new RegExp("/+$"), "") : "https://api.anthropic.com" }}',
+				'={{ (($credentials.baseUrl || "https://api.anthropic.com").trim().toLowerCase().startsWith("http") ? ($credentials.baseUrl || "https://api.anthropic.com").trim() : "https://" + $credentials.baseUrl.trim()).replace(new RegExp("/+$"), "") }}',
 			url: '/v1/models',
 			qs: {
 				limit: 1,
