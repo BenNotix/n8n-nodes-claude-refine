@@ -1,0 +1,46 @@
+# Publishes the package to npm with a provenance attestation via npm
+# Trusted Publishing (OIDC) — no long-lived token. The trusted publisher
+# must be configured on npmjs.com for this repo + workflow filename.
+# `npm run release` (n8n-node release) runs lint + build and then
+# `npm publish` with provenance; the @n8n/node-cli prepublish guard only
+# allows publishing through this flow.
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+permissions:
+  contents: write # required to create the GitHub Release
+  id-token: write # required for npm provenance and Trusted Publishing (OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Trusted Publishing requires npm >= 11.5.1 (Node 22 ships npm 10)
+      - run: npm install -g npm@latest
+      - run: npm ci
+      - run: npm run release
+        env:
+          # Harmless on an existing public package; keeps provenance happy.
+          NPM_CONFIG_ACCESS: public
+      # Create a GitHub Release from the pushed tag, with auto-generated notes.
+      # Idempotent: skips if a release already exists (e.g. on a re-run).
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping"
+          else
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "v$TAG" --generate-notes
+          fi

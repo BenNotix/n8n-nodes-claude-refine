@@ -1,0 +1,60 @@
+{
+	"name": "n8n-nodes-claude-refine",
+	"version": "1.0.0",
+	"description": "n8n community node for the Anthropic Claude API — messages with prompt caching, extended thinking, structured outputs, citations, vision, server tools, message batches, token counting, files and models",
+	"keywords": [
+		"n8n-community-node-package",
+		"anthropic",
+		"claude",
+		"claude-api",
+		"ai",
+		"llm",
+		"prompt-caching",
+		"message-batches",
+		"extended-thinking",
+		"structured-outputs"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/BenNotix/n8n-nodes-claude-refine",
+	"author": {
+		"name": "Ben Gosciniak",
+		"email": "ben@picture-element.fr"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/BenNotix/n8n-nodes-claude-refine.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"format": "prettier nodes credentials --write",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/ClaudeRefineApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/ClaudeRefine/ClaudeRefine.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "^0.39.3",
+		"eslint": "^9.39.4",
+		"prettier": "^3.8.3",
+		"release-it": "^20.2.0",
+		"typescript": "^5.9.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
