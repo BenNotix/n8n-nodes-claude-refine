@@ -1,9 +1,19 @@
-# Publishes the package to npm with a provenance attestation via npm
-# Trusted Publishing (OIDC) — no long-lived token. The trusted publisher
-# must be configured on npmjs.com for this repo + workflow filename.
-# `npm run release` (n8n-node release) runs lint + build and then
-# `npm publish` with provenance; the @n8n/node-cli prepublish guard only
-# allows publishing through this flow.
+# Publishes the package to npm from GitHub Actions with a provenance
+# attestation, as required for n8n verified community nodes (May 1 2026).
+#
+# Authentication, in order of preference:
+#  1. npm Trusted Publishing (OIDC) — no secret needed. Configure it on
+#     npmjs.com under the package's Settings > Publish access > Trusted
+#     Publishers (repository BenNotix/n8n-nodes-claude-refine, workflow
+#     publish.yml). Only possible once the package exists.
+#  2. NPM_TOKEN repository secret (granular access token) — required for
+#     the very first publish, because npm cannot attach a trusted
+#     publisher to a package that does not exist yet. Delete the secret
+#     and the token after switching to Trusted Publishing.
+#
+# `npm run release` (n8n-node release) detects GitHub Actions, runs lint +
+# build and then `npm publish` with NPM_CONFIG_PROVENANCE=true; the
+# @n8n/node-cli prepublish guard only allows publishing through this flow.
 name: Publish
 
 on:
@@ -28,9 +38,13 @@ jobs:
       # Trusted Publishing requires npm >= 11.5.1 (Node 22 ships npm 10)
       - run: npm install -g npm@latest
       - run: npm ci
-      - run: npm run release
+      - name: Publish to npm
+        run: |
+          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          npm run release
         env:
-          # Harmless on an existing public package; keeps provenance happy.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Required for the first publish of a public package; harmless later.
           NPM_CONFIG_ACCESS: public
       # Create a GitHub Release from the pushed tag, with auto-generated notes.
       # Idempotent: skips if a release already exists (e.g. on a re-run).
