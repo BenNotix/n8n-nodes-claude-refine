@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-20
+
+### Fixed
+
+- Passes the official `@n8n/scan-community-package` security scan: the Effort options are now listed alphabetically (the scanner does not honor inline lint disables); the low → max scale is documented in the field description instead.
+- Regenerated `package-lock.json` so `npm ci` works on CI runners.
+
 ## [1.0.0] - 2026-08-20
 
 ### Added

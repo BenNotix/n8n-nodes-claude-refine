@@ -504,19 +504,17 @@ export const messageFields: INodeProperties[] = [
 				displayName: 'Effort',
 				name: 'effort',
 				type: 'options',
-				// Effort is a scale (low → max) — alphabetical order would be misleading here
-				// eslint-disable-next-line n8n-nodes-base/node-param-options-type-unsorted-items
 				options: [
 					{ name: 'Default (High)', value: 'default' },
-					{ name: 'Low', value: 'low' },
-					{ name: 'Medium', value: 'medium' },
 					{ name: 'High', value: 'high' },
-					{ name: 'Xhigh', value: 'xhigh' },
+					{ name: 'Low', value: 'low' },
 					{ name: 'Max', value: 'max' },
+					{ name: 'Medium', value: 'medium' },
+					{ name: 'Xhigh', value: 'xhigh' },
 				],
 				default: 'default',
 				description:
-					'How many tokens Claude may spend thinking and answering. Xhigh needs Opus 4.7+ / Sonnet 5 / Fable 5; Max works on Opus 4.6+ and Sonnet 4.6+; Haiku 4.5 does not support effort at all.',
+					'How many tokens Claude may spend thinking and answering — the scale is low, medium, high, xhigh, max. Xhigh needs Opus 4.7+ / Sonnet 5 / Fable 5; Max works on Opus 4.6+ and Sonnet 4.6+; Haiku 4.5 does not support effort at all.',
 			},
 			{
 				displayName: 'Structured Output Schema (JSON)',

@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-claude-refine",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "n8n community node for the Anthropic Claude API — messages with prompt caching, extended thinking, structured outputs, citations, vision, server tools, message batches, token counting, files and models",
 	"keywords": [
 		"n8n-community-node-package",
