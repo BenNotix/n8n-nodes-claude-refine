@@ -152,6 +152,8 @@ Use **Model → Get** to inspect a model's `capabilities` tree at runtime when i
 
 ## Known limitations
 
+- **Chat Model + streaming + parallel tool calls** — n8n's LangChain adapter merges all streamed tool-call chunks under one index, so when an agent *streams* a response containing several parallel tool calls they collapse into one. The regular (non-streaming) agent path handles parallel tool calls correctly.
+
 - **No streaming** — n8n nodes return complete items. Very large `Max Tokens` values (over ~16,000) can hit HTTP timeouts; raise the *Timeout* option if needed.
 - **Tool-use loops are manual** — when Claude returns `toolUses`, execute them in your workflow and send `tool_result` blocks back via *Raw Messages (JSON)*. (A future version may automate the loop.)
 - Beta features without dedicated fields (MCP connector, skills/containers, fallbacks, task budgets, context management) are reachable through *Request Body Overrides* + *Anthropic Beta Headers*, not first-class UI.

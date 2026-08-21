@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-20
+
+### Fixed
+
+- **Chat Model: tool calls were lost** — `tool_use` blocks in Claude's responses were tunneled as provider content instead of tool-call parts, so the n8n adapter never lifted them into the message's tool calls and AI Agents saw `tool_calls.requested: 0` with an empty output on every tool-using run. Plain text calls were unaffected.
+- **Chat Model streaming: corrupted tool names** — tool-call deltas repeated the tool id and name on every chunk; LangChain concatenates those strings when merging chunks, corrupting the tool name and id. They are now sent once, on the first chunk.
+
+### Added
+
+- Behavioral test suite (`npm test`, run in CI) that drives the Chat Model through the real n8n LangChain adapter with canned Anthropic responses: text, single and parallel tool calls, full agent turns (thinking replay with signatures, tool results, cache breakpoint placement, usage folding), streaming (text, tool call, thinking + signature) and `pause_turn` resumption — the class of contract bugs that type-checking and linting cannot catch.
+
 ## [1.1.0] - 2026-08-20
 
 ### Added

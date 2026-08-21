@@ -118,6 +118,16 @@ function sdkContentFrom(blocks: IDataObject[]): MessageContent[] {
 				}
 				break;
 			}
+			case 'tool_use':
+				// MUST be a tool-call part: the adapter lifts these into
+				// AIMessage.tool_calls — anything else and the agent sees no tool call
+				content.push({
+					type: 'tool-call',
+					toolCallId: block.id as string,
+					toolName: block.name as string,
+					input: JSON.stringify(block.input ?? {}),
+				});
+				break;
 			case 'thinking':
 				// Tunneled verbatim as provider content: the LangChain adapter's
 				// converters round-trip provider blocks losslessly but strip
@@ -591,12 +601,13 @@ export class ClaudeChatModel extends BaseChatModel {
 								state.partialJson += (delta.partial_json as string) ?? '';
 							}
 							// Only client tool_use blocks become agent tool calls —
-							// server_tool_use / mcp_tool_use run on Anthropic's side
+							// server_tool_use / mcp_tool_use run on Anthropic's side.
+							// id/name were sent with the first chunk (content_block_start)
+							// and must NOT repeat: LangChain concatenates the string
+							// fields of tool_call_chunks when merging them.
 							if (state?.type === 'tool_use') {
 								yield {
 									type: 'tool-call-delta',
-									id: state.raw.id as string | undefined,
-									name: state.raw.name as string | undefined,
 									argumentsDelta: (delta.partial_json as string) ?? '',
 								};
 							}

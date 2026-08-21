@@ -18,3 +18,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      # Behavioral tests of the Chat Model sub-node against the real
+      # @n8n/ai-utilities adapter — catches SDK->LangChain contract breaks
+      # (lost tool calls, thinking replay, caching placement) that lint
+      # and tsc cannot see
+      - run: npm test
