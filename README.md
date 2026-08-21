@@ -13,6 +13,24 @@ It ships two nodes:
 
 > 💾 **Why "refine"?** The nodes are built around the features that make Claude cheap and precise in production automations: cached prefixes cost ~10% to read and don't count toward input-token rate limits, and batches halve the price of bulk work.
 
+## How this differs from the built-in Anthropic nodes
+
+This package **complements** n8n's built-in Anthropic nodes — it exists for the API surface they don't cover. If you only need a simple message or image analysis, the built-in node is great; reach for Claude Refine when you need:
+
+| Capability | Built-in Anthropic / Anthropic Chat Model | Claude Refine |
+| --- | --- | --- |
+| Prompt caching | One global on/off TTL (Chat Model only) | Explicit breakpoints (system / tools / conversation / per-message), 5m or 1h, cache usage in output, 4-breakpoint validation |
+| Message Batches API (50% cost) | — | Create from items or JSON, poll, parsed JSONL results, cancel, delete |
+| Token counting (free pre-flight) | — | Same request builder as Send |
+| Structured outputs (JSON Schema) | — | With automatic parsing of the result |
+| Document citations | — | Per-attachment toggle, citations in output |
+| Effort control | Chat Model only | Both nodes, low → max |
+| File download (code-execution outputs) | — | To binary |
+| Models API capability tree | — | `max_input_tokens`, thinking modes, effort support per model |
+| Rate-limit headers, request IDs | — | Optional in output, for flow control |
+| Beta features (MCP connector, skills, fallbacks…) | — | Beta headers + request overrides escape hatch |
+| Agent-loop caching | Single auto breakpoint | System + tools + conversation breakpoints re-applied every step |
+
 [Installation](#installation) · [Credentials](#credentials) · [Resources & operations](#resources--operations) · [Chat Model for AI Agents](#chat-model-for-ai-agents) · [Prompt caching](#prompt-caching) · [Usage examples](#usage-examples) · [Model parameter rules](#model-parameter-rules) · [Known limitations](#known-limitations)
 
 ## Installation
@@ -126,6 +144,14 @@ Rules to know (enforced by the API, surfaced in the node descriptions):
 - Verify with `usage.cache_read_input_tokens` in the output — if it stays 0 across identical runs, something in your prefix changes every time.
 
 ## Usage examples
+
+Ready-to-import workflows live in [`examples/`](examples/):
+
+- [`cached-message.json`](examples/cached-message.json) — knowledge-base Q&A with a free token pre-count and a 1-hour cached system prompt. Run it twice and watch `usage.cache_read_input_tokens`.
+- [`batch-processing.json`](examples/batch-processing.json) — bulk classification at 50% cost: create a batch from the input items, poll until `ended`, fetch one result item per request.
+- [`ai-agent-cached-chat-model.json`](examples/ai-agent-cached-chat-model.json) — an AI Agent driven by the Claude Refine Chat Model with all three cache breakpoints active.
+
+More patterns:
 
 - **Cached RAG / chat memory** — Send (*Messages Builder*) → paste the knowledge base into the System Prompt → `Prompt Caching → Cache System Prompt: 1 Hour`. Subsequent runs read the base from cache at ~10% cost.
 - **Bulk classification at half price** — feed 1,000 items → Batch (*Create*, Build From Input Items, prompt `={{ $json.text }}`) → Wait → Batch (*Get*) in a loop until `ended` → Batch (*Get Results*) → merge by `customId`.

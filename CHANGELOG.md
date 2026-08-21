@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-21
+
+### Added
+
+- Three ready-to-import example workflows in [`examples/`](examples/): cached knowledge-base Q&A with token pre-count, bulk classification through the Batches API with polling, and an AI Agent driven by the cached Chat Model.
+- README section comparing the package with the built-in Anthropic nodes.
+
+### Changed
+
+- Toolchain aligned with the current n8n community-node standards (`@n8n/node-cli` 0.44, latest community lint ruleset — zero findings) in preparation for the n8n Cloud verification submission; passes `@n8n/scan-community-package` stable and beta.
+- Slimmer npm package: the TypeScript build cache is no longer shipped (−40% package size).
+
 ## [1.1.1] - 2026-08-20
 
 ### Fixed

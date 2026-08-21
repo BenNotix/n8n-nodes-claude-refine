@@ -1,0 +1,60 @@
+{
+	"name": "Claude Refine — AI Agent with cached Chat Model",
+	"nodes": [
+		{
+			"parameters": {
+				"options": {}
+			},
+			"id": "a3b4c5d6-0000-4000-8000-000000000001",
+			"name": "When chat message received",
+			"type": "@n8n/n8n-nodes-langchain.chatTrigger",
+			"typeVersion": 1.1,
+			"position": [0, 0],
+			"webhookId": "a3b4c5d6-0000-4000-8000-00000000c4a7"
+		},
+		{
+			"parameters": {
+				"options": {
+					"systemMessage": "You are a helpful assistant. Use your tools when they help answer the question."
+				}
+			},
+			"id": "a3b4c5d6-0000-4000-8000-000000000002",
+			"name": "AI Agent",
+			"type": "@n8n/n8n-nodes-langchain.agent",
+			"typeVersion": 2,
+			"position": [220, 0]
+		},
+		{
+			"parameters": {
+				"model": "claude-sonnet-4-6",
+				"promptCaching": {
+					"systemTtl": "5m",
+					"toolsTtl": "5m",
+					"conversationTtl": "5m"
+				},
+				"options": {
+					"thinkingMode": "adaptive",
+					"maxTokens": 4096
+				}
+			},
+			"id": "a3b4c5d6-0000-4000-8000-000000000003",
+			"name": "Claude Refine Chat Model",
+			"type": "n8n-nodes-claude-refine.claudeRefineChatModel",
+			"typeVersion": 1,
+			"position": [180, 220],
+			"notesInFlow": true,
+			"notes": "Every agent step re-reads the previous steps from cache — watch cache_read_input_tokens in the logs"
+		}
+	],
+	"connections": {
+		"When chat message received": {
+			"main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+		},
+		"Claude Refine Chat Model": {
+			"ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]]
+		}
+	},
+	"active": false,
+	"settings": {},
+	"pinData": {}
+}

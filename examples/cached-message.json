@@ -1,0 +1,63 @@
+{
+	"name": "Claude Refine — cached knowledge base Q&A",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "d1f2a3b4-0000-4000-8000-000000000001",
+			"name": "When clicking Test workflow",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"resource": "message",
+				"operation": "countTokens",
+				"model": "claude-sonnet-4-6",
+				"inputType": "prompt",
+				"prompt": "What is our refund policy for yearly plans?",
+				"system": "You are the support assistant of ACME Corp. Answer strictly from the knowledge base below.\n\n<knowledge_base>\nPaste your large, stable knowledge base here — this is the part the next node caches.\n</knowledge_base>"
+			},
+			"id": "d1f2a3b4-0000-4000-8000-000000000002",
+			"name": "Count Tokens (free pre-flight)",
+			"type": "n8n-nodes-claude-refine.claudeRefine",
+			"typeVersion": 1,
+			"position": [220, 0]
+		},
+		{
+			"parameters": {
+				"resource": "message",
+				"operation": "create",
+				"model": "claude-sonnet-4-6",
+				"inputType": "prompt",
+				"prompt": "What is our refund policy for yearly plans?",
+				"system": "You are the support assistant of ACME Corp. Answer strictly from the knowledge base below.\n\n<knowledge_base>\nPaste your large, stable knowledge base here — this is the part the next node caches.\n</knowledge_base>",
+				"maxTokens": 1024,
+				"promptCaching": {
+					"systemTtl": "1h"
+				},
+				"thinking": {
+					"mode": "adaptive"
+				}
+			},
+			"id": "d1f2a3b4-0000-4000-8000-000000000003",
+			"name": "Ask Claude (system prompt cached 1h)",
+			"type": "n8n-nodes-claude-refine.claudeRefine",
+			"typeVersion": 1,
+			"position": [440, 0],
+			"notesInFlow": true,
+			"notes": "Run it twice: the second run shows cache_read_input_tokens > 0 in usage"
+		}
+	],
+	"connections": {
+		"When clicking Test workflow": {
+			"main": [[{ "node": "Count Tokens (free pre-flight)", "type": "main", "index": 0 }]]
+		},
+		"Count Tokens (free pre-flight)": {
+			"main": [[{ "node": "Ask Claude (system prompt cached 1h)", "type": "main", "index": 0 }]]
+		}
+	},
+	"active": false,
+	"settings": {},
+	"pinData": {}
+}

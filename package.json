@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-claude-refine",
-	"version": "1.1.1",
+	"version": "1.2.0",
 	"description": "n8n community nodes for the Anthropic Claude API — messages with prompt caching, extended thinking, structured outputs, citations, vision, server tools, message batches, token counting, files and models, plus a cache-enabled Chat Model for AI Agents",
 	"keywords": [
 		"n8n-community-node-package",
@@ -36,7 +36,8 @@
 		"prepublishOnly": "n8n-node prerelease"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"!dist/tsconfig.tsbuildinfo"
 	],
 	"n8n": {
 		"n8nNodesApiVersion": 1,
@@ -51,8 +52,8 @@
 		"aiNodeSdkVersion": 1
 	},
 	"devDependencies": {
-		"@n8n/ai-node-sdk": "^0.25.4",
-		"@n8n/node-cli": "^0.39.3",
+		"@n8n/ai-node-sdk": "^0.25.5",
+		"@n8n/node-cli": "^0.44.5",
 		"eslint": "^9.39.4",
 		"prettier": "^3.8.3",
 		"release-it": "^20.2.0",
